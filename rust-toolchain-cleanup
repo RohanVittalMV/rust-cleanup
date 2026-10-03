@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Remove all rustup toolchains except the current stable and nightly channels.
+set -euo pipefail
+
+dry_run=0
+[[ "${1:-}" == "-n" || "${1:-}" == "--dry-run" ]] && dry_run=1
+
+# Keep "stable" / "nightly" (optionally with a host triple), but not dated
+keep_re='^(stable|nightly)(-[A-Za-z0-9_]+-[A-Za-z0-9_]+(-[A-Za-z0-9_]+)?)?$'
+
+while read -r toolchain _; do
+  [[ -z "$toolchain" ]] && continue
+  if [[ "$toolchain" =~ $keep_re && ! "$toolchain" =~ ^(stable|nightly)-[0-9]{4}- ]]; then
+    echo "keeping  $toolchain"
+  elif (( dry_run )); then
+    echo "would remove $toolchain"
+  else
+    echo "removing $toolchain"
+    rustup toolchain remove "$toolchain"
+  fi
+done < <(rustup toolchain list)
